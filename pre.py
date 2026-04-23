@@ -1,6 +1,7 @@
 import pandas as pd
 import networkx as nx
 from itertools import combinations
+import matplotlib.pyplot as plt
 
 # =========================
 # 1. CARGA CORRECTA
@@ -8,11 +9,11 @@ from itertools import combinations
 
 df = pd.read_csv(
     "testMORERE.csv",
-    header=2   # 👈 salta filas basura
+    header=2
 )
 
-# eliminar columnas vacías iniciales
-df = df.iloc[:, 2:]   # 👈 elimina los dos ",,"
+# eliminar columnas basura iniciales
+df = df.iloc[:, 2:]
 
 # limpiar nombres
 df.columns = df.columns.str.strip()
@@ -21,7 +22,13 @@ df.columns = df.columns.str.strip()
 # 2. LIMPIAR BOOLEANOS
 # =========================
 
-df["is_recommended"] = df["is_recommended"].astype(str).str.strip().str.upper()
+df["is_recommended"] = (
+    df["is_recommended"]
+    .astype(str)
+    .str.strip()
+    .str.upper()
+)
+
 df = df[df["is_recommended"] == "TRUE"]
 
 print("Filas:", len(df))
@@ -52,14 +59,19 @@ for games in grouped:
 
 
 # =========================
-# 5. ANÁLISIS
+# 5. MÉTRICAS BÁSICAS
 # =========================
 
-print("Nodos:", G.number_of_nodes())
+print("\nNodos:", G.number_of_nodes())
 print("Aristas:", G.number_of_edges())
 
+print("Densidad:", nx.density(G))
 
-# 🔥 juegos puente
+
+# =========================
+# 6. BETWEENNESS (PUENTES)
+# =========================
+
 bet = nx.betweenness_centrality(G, weight="weight")
 
 top = sorted(bet.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -70,7 +82,7 @@ for g, s in top:
 
 
 # =========================
-# 6. COMUNIDADES
+# 7. COMUNIDADES
 # =========================
 
 from networkx.algorithms.community import greedy_modularity_communities
@@ -78,3 +90,40 @@ from networkx.algorithms.community import greedy_modularity_communities
 communities = list(greedy_modularity_communities(G))
 
 print("\nComunidades:", len(communities))
+
+
+# =========================
+# 8. VISUALIZACIÓN MEJORADA
+# =========================
+
+plt.figure(figsize=(12, 8))
+
+# layout más compacto (CLAVE para ver aristas)
+pos = nx.spring_layout(G, seed=42, k=0.3, iterations=100)
+
+# nodos
+nx.draw_networkx_nodes(
+    G,
+    pos,
+    node_size=300,
+    node_color="lightblue"
+)
+
+# aristas (más visibles)
+nx.draw_networkx_edges(
+    G,
+    pos,
+    alpha=0.6,
+    width=1.5
+)
+
+# etiquetas
+nx.draw_networkx_labels(
+    G,
+    pos,
+    font_size=8
+)
+
+plt.title("Grafo de co-recomendaciones de Steam")
+plt.axis("off")
+plt.show()

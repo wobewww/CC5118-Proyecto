@@ -91,7 +91,7 @@ labels = nx.draw_networkx_labels(
 for t in labels.values():
     t.set_bbox(dict(facecolor='white', alpha=0.5, edgecolor='none', pad=1))
 
-plt.title("Red de Co-recomendaciones (Steam)\nGrosores indican frecuencia de co-ocurrencia", fontsize=15)
+plt.title("Red de Co-recomendaciones (Steam)", fontsize=15)
 plt.axis("off")
 plt.tight_layout()
 plt.show()

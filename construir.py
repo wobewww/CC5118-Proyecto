@@ -8,7 +8,7 @@ import gzip
 
 # 1. Carga y limpieza de datos
 df_completo = pd.read_parquet("recommendations_sorted.parquet")
-df = df_completo.head(1000000).copy()
+df = df_completo.head(10000).copy()
 df.columns = df.columns.str.strip()
 if "is_recommended" in df.columns:
     df["is_recommended"] = df["is_recommended"].astype(str).str.strip().str.upper()
@@ -52,7 +52,7 @@ nx.draw_networkx_edges(G, pos, alpha=1, edge_color="gray", width=edge_widths)
 
 nodes = nx.draw_networkx_nodes(G, pos, node_size=500, node_color=node_colors, cmap=plt.cm.Set3, edgecolors="white", linewidths=1)
 
-plt.title("Red de Co-recomendaciones (Steam - Muestra 1M)", fontsize=15)
+plt.title("Red de Co-recomendaciones (Steam - Muestra 10k)", fontsize=15)
 plt.axis("off")
 plt.tight_layout()
 plt.show()

@@ -6,7 +6,7 @@ import pickle
 import gzip
 
 # 1. Cargar la red ya construida
-with gzip.open("red_construida.pkl.gz", "rb") as f:
+with gzip.open("red_construida1MI.pkl.gz", "rb") as f:
     data = pickle.load(f)
 
 G = data["grafo"]

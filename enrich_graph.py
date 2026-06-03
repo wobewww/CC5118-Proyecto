@@ -4,7 +4,6 @@ import pandas as pd
 import networkx as nx
 import pickle
 import gzip
-import numpy as np
 
 # 1. Cargar la red ya construida
 with gzip.open("red_construida1MI.pkl.gz", "rb") as f:
@@ -76,11 +75,17 @@ print("\nGrafo enriquecido guardado en red_enriquecida.pkl.gz")
 # ---- CÁLCULO DE CENTRALIDADES ----
 print('\nCalculando centralidades...')
 
-# 1) Grado (número de vecinos directos)
+# 1) Grado y centralidad de grado
 degree = dict(G_enriquecido.degree())
 degree_centrality = nx.degree_centrality(G_enriquecido)
 
-# 2) Eigenvector centrality (intenta usar la versión basada en numpy)
+# 2) Betweenness centrality
+betweenness_centrality = nx.betweenness_centrality(G_enriquecido, normalized=True, weight='weight')
+
+# 3) Closeness centrality
+closeness_centrality = nx.closeness_centrality(G_enriquecido, distance=None, wf_improved=True)
+
+# 4) Eigenvector centrality (intenta usar la versión basada en numpy)
 try:
     eigen_centrality = nx.eigenvector_centrality_numpy(G_enriquecido, weight='weight')
 except Exception:
@@ -90,31 +95,11 @@ except Exception:
         print('No se pudo calcular eigenvector centrality:', e)
         eigen_centrality = {n: 0.0 for n in G_enriquecido.nodes()}
 
-# 3) Alpha-centrality: usamos la implementación de Katz como aproximación/generalización
-# Estimamos un alpha seguro usando el radio espectral (máximo valor absoluto propio)
-alpha = 0.01
-try:
-    A = nx.to_numpy_array(G_enriquecido, weight='weight')
-    if A.size > 0:
-        eigs = np.linalg.eigvals(A)
-        max_eig = max(abs(eigs))
-        if max_eig > 0:
-            alpha = 0.85 / max_eig
-        else:
-            alpha = 0.01
-except Exception:
-    alpha = 0.01
+# 5) Local clustering coefficient
+local_clustering = nx.clustering(G_enriquecido, weight='weight')
 
-beta = {n: 1.0 for n in G_enriquecido.nodes()}
-try:
-    alpha_centrality = nx.katz_centrality_numpy(G_enriquecido, alpha=alpha, beta=beta, weight='weight')
-except Exception as e:
-    print('Katz/alpha centrality falló:', e)
-    try:
-        alpha_centrality = nx.katz_centrality(G_enriquecido, alpha=alpha, beta=1.0, max_iter=200, tol=1e-06, weight='weight')
-    except Exception as e2:
-        print('Fallback Katz iterative falló:', e2)
-        alpha_centrality = {n: 0.0 for n in G_enriquecido.nodes()}
+# 6) Global clustering coefficient (transitivity)
+global_clustering = nx.transitivity(G_enriquecido)
 
 # Construir DataFrame con resultados
 rows = []
@@ -133,8 +118,11 @@ for n in G_enriquecido.nodes():
         'name': G_enriquecido.nodes[n].get('name'),
         'degree': degree.get(n, 0),
         'degree_centrality': degree_centrality.get(n, 0.0),
+        'betweenness_centrality': betweenness_centrality.get(n, 0.0),
+        'closeness_centrality': closeness_centrality.get(n, 0.0),
         'eigenvector': eigen_centrality.get(n, 0.0),
-        'alpha_centrality': alpha_centrality.get(n, 0.0),
+        'local_clustering_coefficient': local_clustering.get(n, 0.0),
+        'global_clustering_coefficient': global_clustering,
         'community': community_map.get(n, None)
     })
 
@@ -144,13 +132,50 @@ df_cent = pd.DataFrame(rows)
 df_cent = df_cent.sort_values(by=['degree'], ascending=False)
 df_cent.to_csv('centralidades_red_enriquecida.csv', index=False)
 
+resumen = [
+    'Resumen de centralidades para red_enriquecida.pkl.gz',
+    f'Global clustering coefficient (transitivity): {global_clustering:.6f}',
+    '',
+    'Top 10 por grado:',
+    df_cent[['app_id', 'name', 'degree']].head(10).to_string(index=False),
+    '',
+    'Top 10 por degree centrality:',
+    df_cent.sort_values(by=['degree_centrality'], ascending=False)[['app_id', 'name', 'degree_centrality']].head(10).to_string(index=False),
+    '',
+    'Top 10 por betweenness centrality:',
+    df_cent.sort_values(by=['betweenness_centrality'], ascending=False)[['app_id', 'name', 'betweenness_centrality']].head(10).to_string(index=False),
+    '',
+    'Top 10 por closeness centrality:',
+    df_cent.sort_values(by=['closeness_centrality'], ascending=False)[['app_id', 'name', 'closeness_centrality']].head(10).to_string(index=False),
+    '',
+    'Top 10 por eigenvector centrality:',
+    df_cent.sort_values(by=['eigenvector'], ascending=False)[['app_id', 'name', 'eigenvector']].head(10).to_string(index=False),
+    '',
+    'Top 10 por local clustering coefficient:',
+    df_cent.sort_values(by=['local_clustering_coefficient'], ascending=False)[['app_id', 'name', 'local_clustering_coefficient']].head(10).to_string(index=False),
+]
+
+with open('resumen_centralidades_red_enriquecida.txt', 'w', encoding='utf-8') as f:
+    f.write('\n'.join(resumen))
+
+print(f'Global clustering coefficient (transitivity): {global_clustering:.6f}')
 print('\nTop 10 por grado:')
 print(df_cent[['app_id', 'name', 'degree']].head(10).to_string(index=False))
 
-print('\nTop 10 por eigenvector:')
+print('\nTop 10 por degree centrality:')
+print(df_cent.sort_values(by=['degree_centrality'], ascending=False)[['app_id', 'name', 'degree_centrality']].head(10).to_string(index=False))
+
+print('\nTop 10 por betweenness centrality:')
+print(df_cent.sort_values(by=['betweenness_centrality'], ascending=False)[['app_id', 'name', 'betweenness_centrality']].head(10).to_string(index=False))
+
+print('\nTop 10 por closeness centrality:')
+print(df_cent.sort_values(by=['closeness_centrality'], ascending=False)[['app_id', 'name', 'closeness_centrality']].head(10).to_string(index=False))
+
+print('\nTop 10 por eigenvector centrality:')
 print(df_cent.sort_values(by=['eigenvector'], ascending=False)[['app_id', 'name', 'eigenvector']].head(10).to_string(index=False))
 
-print('\nTop 10 por alpha-centrality (Katz):')
-print(df_cent.sort_values(by=['alpha_centrality'], ascending=False)[['app_id', 'name', 'alpha_centrality']].head(10).to_string(index=False))
+print('\nTop 10 por local clustering coefficient:')
+print(df_cent.sort_values(by=['local_clustering_coefficient'], ascending=False)[['app_id', 'name', 'local_clustering_coefficient']].head(10).to_string(index=False))
 
 print('\nCentralidades guardadas en centralidades_red_enriquecida.csv')
+print('Resumen breve guardado en resumen_centralidades_red_enriquecida.txt')

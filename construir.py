@@ -26,6 +26,9 @@ for games in grouped:
             else:
                 G.add_edge(g1, g2, weight=1)
 
+for u, v, datos in G.edges(data=True):
+    datos["weight"] = 1.0 / datos["weight"]
+
 # 3. Análisis de comunidades y métricas
 communities = list(greedy_modularity_communities(G))
 color_map = {}
@@ -45,8 +48,9 @@ plt.figure(figsize=(14, 10), facecolor='#f0f0f0')
 pos = nx.spring_layout(G, k=0.5, iterations=50, seed=42)
 
 weights = [G[u][v]['weight'] for u, v in G.edges()]
-max_w = max(weights) if weights else 1
-edge_widths = [(w / max_w) * 3 for w in weights]
+inverse_weights = [1.0 / w for w in weights]
+max_inv_w = max(inverse_weights) if inverse_weights else 1
+edge_widths = [(w / max_inv_w) * 3 for w in inverse_weights]
 
 nx.draw_networkx_edges(G, pos, alpha=1, edge_color="gray", width=edge_widths)
 

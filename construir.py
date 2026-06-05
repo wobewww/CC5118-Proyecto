@@ -8,7 +8,7 @@ import gzip
 
 # 1. Carga y limpieza de datos
 df_completo = pd.read_parquet("recommendations_sorted.parquet")
-df = df_completo.head(10000).copy()
+df = df_completo.head(100000).copy()
 df.columns = df.columns.str.strip()
 if "is_recommended" in df.columns:
     df["is_recommended"] = df["is_recommended"].astype(str).str.strip().str.upper()
@@ -36,7 +36,7 @@ for i, comm in enumerate(communities):
 node_colors = [color_map[n] for n in G.nodes()]
 
 # 4. Guardar la red y comunidades comprimidas
-with gzip.open("red_construida.pkl.gz", "wb") as f:
+with gzip.open("red_construida100K.pkl.gz", "wb") as f:
     pickle.dump({"grafo": G, "comunidades": communities}, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 # 5. Visualización

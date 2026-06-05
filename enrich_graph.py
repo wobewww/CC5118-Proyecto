@@ -6,7 +6,7 @@ import pickle
 import gzip
 
 # 1. Cargar la red ya construida
-with gzip.open("red_construida1MI.pkl.gz", "rb") as f:
+with gzip.open("red_construida100K.pkl.gz", "rb") as f:
     data = pickle.load(f)
 
 G = data["grafo"]
@@ -75,16 +75,21 @@ print("\nGrafo enriquecido guardado en red_enriquecida.pkl.gz")
 # ---- CÁLCULO DE CENTRALIDADES ----
 print('\nCalculando centralidades...')
 
+print("1) Grado y centralidad de grado")
 # 1) Grado y centralidad de grado
 degree = dict(G_enriquecido.degree())
 degree_centrality = nx.degree_centrality(G_enriquecido)
 
+
+
 # 2) Betweenness centrality
 betweenness_centrality = nx.betweenness_centrality(G_enriquecido, normalized=True, weight='weight')
 
+print("3) Closeness centrality")
 # 3) Closeness centrality
 closeness_centrality = nx.closeness_centrality(G_enriquecido, distance=None, wf_improved=True)
 
+print("4) Eigenvector centrality")
 # 4) Eigenvector centrality (intenta usar la versión basada en numpy)
 try:
     eigen_centrality = nx.eigenvector_centrality_numpy(G_enriquecido, weight='weight')
@@ -95,9 +100,11 @@ except Exception:
         print('No se pudo calcular eigenvector centrality:', e)
         eigen_centrality = {n: 0.0 for n in G_enriquecido.nodes()}
 
+print("5) Local clustering coefficient")
 # 5) Local clustering coefficient
 local_clustering = nx.clustering(G_enriquecido, weight='weight')
 
+print("6) Global clustering coefficient (transitivity)")
 # 6) Global clustering coefficient (transitivity)
 global_clustering = nx.transitivity(G_enriquecido)
 
@@ -167,6 +174,7 @@ print(df_cent.sort_values(by=['degree_centrality'], ascending=False)[['app_id', 
 
 print('\nTop 10 por betweenness centrality:')
 print(df_cent.sort_values(by=['betweenness_centrality'], ascending=False)[['app_id', 'name', 'betweenness_centrality']].head(10).to_string(index=False))
+
 
 print('\nTop 10 por closeness centrality:')
 print(df_cent.sort_values(by=['closeness_centrality'], ascending=False)[['app_id', 'name', 'closeness_centrality']].head(10).to_string(index=False))

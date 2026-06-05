@@ -33,6 +33,12 @@ def main():
     G_enriquecido = data["grafo"]
     communities = data.get("comunidades", [])
 
+    # En este pipeline, `weight` ya viene como distancia (1/co-recomendaciones).
+    # Creamos `strength` para las métricas que interpretan peso como fuerza.
+    for _, _, attrs in G_enriquecido.edges(data=True):
+        dist = attrs.get("weight", 1.0)
+        attrs["strength"] = 1.0 / dist if dist > 0 else 0.0
+
     print("\\nCalculando centralidades...")
 
     print("1) Grado y centralidad de grado")
@@ -50,27 +56,27 @@ def main():
     print("3) Closeness centrality")
     closeness_centrality = nx.closeness_centrality(
         G_enriquecido,
-        distance=None,
+        distance="weight",
         wf_improved=True,
     )
 
     print("4) Eigenvector centrality")
     try:
-        eigen_centrality = nx.eigenvector_centrality_numpy(G_enriquecido, weight="weight")
+        eigen_centrality = nx.eigenvector_centrality_numpy(G_enriquecido, weight="strength")
     except Exception:
         try:
             eigen_centrality = nx.eigenvector_centrality(
                 G_enriquecido,
                 max_iter=200,
                 tol=1e-06,
-                weight="weight",
+                weight="strength",
             )
         except Exception as e:
             print("No se pudo calcular eigenvector centrality:", e)
             eigen_centrality = {n: 0.0 for n in G_enriquecido.nodes()}
 
     print("5) Local clustering coefficient")
-    local_clustering = nx.clustering(G_enriquecido, weight="weight")
+    local_clustering = nx.clustering(G_enriquecido, weight="strength")
 
     print("6) Global clustering coefficient (transitivity)")
     global_clustering = nx.transitivity(G_enriquecido)

@@ -12,11 +12,15 @@ from __future__ import annotations
 
 import argparse
 import math
+import gzip
+import pickle
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import networkx as nx
+from matplotlib.colors import Normalize
 
 
 DEFAULT_COLUMNS = [
@@ -26,6 +30,13 @@ DEFAULT_COLUMNS = [
     "closeness_centrality",
     "eigenvector",
     "local_clustering_coefficient",
+]
+
+GRAPH_METRICS = [
+    ("betweenness_centrality", plt.cm.Oranges, "Betweenness Centrality"),
+    ("closeness_centrality", plt.cm.Greens, "Closeness Centrality"),
+    ("eigenvector", plt.cm.Purples, "Eigenvector Centrality"),
+    ("local_clustering_coefficient", plt.cm.Blues, "Local Clustering Coefficient"),
 ]
 
 
@@ -68,6 +79,22 @@ def binned_frequency(values: pd.Series, log_bins: bool = False, bins: int | None
         y = counts
 
     return x, y
+
+
+def load_graph(graph_path: Path) -> nx.Graph | None:
+    if not graph_path.exists():
+        return None
+
+    with gzip.open(graph_path, "rb") as f:
+        data = pickle.load(f)
+
+    if isinstance(data, dict) and "grafo" in data:
+        return data["grafo"]
+
+    if isinstance(data, nx.Graph):
+        return data
+
+    return None
 
 
 def summarize_series(series: pd.Series) -> dict[str, float]:
@@ -133,44 +160,6 @@ def write_summary_table(df: pd.DataFrame, columns: list[str], output_dir: Path) 
             f.write(summary_df.to_string(index=False))
             f.write("\n")
     return summary_df
-
-
-def plot_distribution(series: pd.Series, metric: str, output_dir: Path) -> None:
-    cleaned = series.dropna()
-    if cleaned.empty:
-        return
-
-    # Histograma lineal
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.hist(cleaned, bins=50, color="#2C7FB8", edgecolor="white", alpha=0.9)
-    ax.set_title(f"Distribución de {metric}")
-    ax.set_xlabel(metric)
-    ax.set_ylabel("Frecuencia")
-    fig.tight_layout()
-    fig.savefig(output_dir / f"{metric}_histograma.png", dpi=160)
-    plt.close(fig)
-
-    # Boxplot
-    fig, ax = plt.subplots(figsize=(10, 2.8))
-    ax.boxplot(cleaned, vert=False, showfliers=True)
-    ax.set_title(f"Boxplot de {metric}")
-    ax.set_xlabel(metric)
-    fig.tight_layout()
-    fig.savefig(output_dir / f"{metric}_boxplot.png", dpi=160)
-    plt.close(fig)
-
-    # Histograma logarítmico si la métrica es estrictamente positiva
-    positive = cleaned[cleaned > 0]
-    if not positive.empty:
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.hist(positive, bins=50, color="#F03B20", edgecolor="white", alpha=0.9)
-        ax.set_xscale("log")
-        ax.set_title(f"Distribución logarítmica de {metric}")
-        ax.set_xlabel(metric)
-        ax.set_ylabel("Frecuencia")
-        fig.tight_layout()
-        fig.savefig(output_dir / f"{metric}_histograma_log.png", dpi=160)
-        plt.close(fig)
 
 
 def plot_frequency_panels(series: pd.Series, metric: str, output_dir: Path) -> None:
@@ -239,6 +228,63 @@ def plot_frequency_panels(series: pd.Series, metric: str, output_dir: Path) -> N
     plt.close(fig)
 
 
+def plot_metric_graph(
+    graph: nx.Graph,
+    metric_values: pd.Series,
+    metric: str,
+    cmap,
+    title: str,
+    output_dir: Path,
+    top_n: int = 250,
+) -> None:
+    metric_values = metric_values.copy()
+    metric_values.index = pd.to_numeric(metric_values.index, errors="coerce")
+    metric_values = metric_values[metric_values.index.notna()]
+    metric_values.index = metric_values.index.astype(int)
+
+    cleaned = metric_values.dropna()
+    if cleaned.empty:
+        return
+
+    ranked_nodes = cleaned.sort_values(ascending=False).head(top_n).index.tolist()
+    subgraph = graph.subgraph(ranked_nodes).copy()
+    if subgraph.number_of_nodes() == 0:
+        return
+
+    values = [float(metric_values.loc[node]) for node in subgraph.nodes if node in metric_values.index]
+    if not values:
+        return
+
+    norm = Normalize(vmin=min(values), vmax=max(values))
+    node_colors = [cmap(norm(float(metric_values.loc[node]))) for node in subgraph.nodes]
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    pos = nx.spring_layout(subgraph, seed=42)
+
+    nx.draw_networkx_edges(subgraph, pos, ax=ax, alpha=0.25, edge_color="black", width=0.8)
+    nx.draw_networkx_nodes(
+        subgraph,
+        pos,
+        ax=ax,
+        node_color=node_colors,
+        node_size=140,
+        edgecolors="white",
+        linewidths=0.4,
+    )
+
+    if subgraph.number_of_nodes() <= 60:
+        nx.draw_networkx_labels(subgraph, pos, ax=ax, font_size=7, font_color="black")
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    plt.colorbar(sm, ax=ax, label=title)
+    ax.set_title(f"{title} en subgrafo de top {top_n}")
+    ax.axis("off")
+    fig.tight_layout()
+    fig.savefig(output_dir / f"{metric}_grafo_coloreado.png", dpi=180)
+    plt.close(fig)
+
+
 def build_report(summary_df: pd.DataFrame, output_dir: Path) -> None:
     lines = []
     lines.append("Resumen de distribuciones de centralidad")
@@ -283,11 +329,16 @@ def main() -> None:
     input_path = Path(args.input)
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
+    graph = load_graph(Path("red_enriquecida.pkl.gz"))
+    if graph is None:
+        graph = load_graph(Path("red_construida100K.pkl.gz"))
 
     if not input_path.exists():
         raise FileNotFoundError(f"No existe el archivo de entrada: {input_path}")
 
     df = pd.read_csv(input_path)
+    if "app_id" in df.columns:
+        df["app_id"] = pd.to_numeric(df["app_id"], errors="coerce")
 
     available_columns = []
     for column in args.columns:
@@ -297,11 +348,13 @@ def main() -> None:
 
     summary_df = write_summary_table(df, available_columns, output_dir)
 
-    for column in available_columns:
-        plot_distribution(df[column], column, output_dir)
+    if "degree_centrality" in available_columns:
+        plot_frequency_panels(df["degree_centrality"], "degree_centrality", output_dir)
 
-    for column in available_columns:
-        plot_frequency_panels(df[column], column, output_dir)
+    if graph is not None:
+        for metric, cmap, title in GRAPH_METRICS:
+            if metric in df.columns:
+                plot_metric_graph(graph, df.set_index("app_id")[metric], metric, cmap, title, output_dir)
 
     build_report(summary_df, output_dir)
 

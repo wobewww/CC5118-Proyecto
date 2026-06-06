@@ -1,80 +1,61 @@
-Resumen de centralidades para red_enriquecida.pkl.gz
-Global clustering coefficient (transitivity): 0.252736
-
-Top 10 por grado:
- app_id                                     name  degree
-    440                          Team Fortress 2     173
- 431960                         Wallpaper Engine      92
- 374320                          DARK SOULS™ III      90
- 945360                                 Among Us      90
- 394360                        Hearts of Iron IV      89
-   4000                              Garry's Mod      87
- 275850                             No Man's Sky      86
- 292030                The Witcher® 3: Wild Hunt      79
- 255710                         Cities: Skylines      79
- 335300 DARK SOULS™ II: Scholar of the First Sin      77
-
-Top 10 por degree centrality:
- app_id                                     name  degree_centrality
-    440                          Team Fortress 2           0.163516
- 431960                         Wallpaper Engine           0.086957
- 374320                          DARK SOULS™ III           0.085066
- 945360                                 Among Us           0.085066
- 394360                        Hearts of Iron IV           0.084121
-   4000                              Garry's Mod           0.082231
- 275850                             No Man's Sky           0.081285
- 292030                The Witcher® 3: Wild Hunt           0.074669
- 255710                         Cities: Skylines           0.074669
- 335300 DARK SOULS™ II: Scholar of the First Sin           0.072779
-
-Top 10 por betweenness centrality:
- app_id                                     name  betweenness_centrality
-    440                          Team Fortress 2                0.061981
- 374320                          DARK SOULS™ III                0.034236
-  49520                            Borderlands 2                0.032651
- 394360                        Hearts of Iron IV                0.031048
-   4000                              Garry's Mod                0.026911
- 275850                             No Man's Sky                0.026586
- 945360                                 Among Us                0.026425
- 255710                         Cities: Skylines                0.024298
- 431960                         Wallpaper Engine                0.023985
- 335300 DARK SOULS™ II: Scholar of the First Sin                0.023917
-
-Top 10 por closeness centrality:
- app_id              name  closeness_centrality
-    440   Team Fortress 2              0.465799
- 431960  Wallpaper Engine              0.429395
-   4000       Garry's Mod              0.426665
- 945360          Among Us              0.425699
- 255710  Cities: Skylines              0.417378
- 374320   DARK SOULS™ III              0.417192
- 960090       Bloons TD 6              0.416453
- 394360 Hearts of Iron IV              0.415900
-    620          Portal 2              0.412250
-     70         Half-Life              0.409554
-
-Top 10 por eigenvector centrality:
- app_id              name  eigenvector
-    440   Team Fortress 2     0.402668
- 945360          Among Us     0.213498
- 960090       Bloons TD 6     0.181184
-   4000       Garry's Mod     0.179713
-    220       Half-Life 2     0.174111
-    620          Portal 2     0.171899
- 431960  Wallpaper Engine     0.163018
- 105600          Terraria     0.157840
- 394360 Hearts of Iron IV     0.152360
-    550     Left 4 Dead 2     0.151423
-
-Top 10 por local clustering coefficient:
- app_id                                           name  local_clustering_coefficient
- 568090                                     Tattletail                      0.259589
- 786450                           Don't Bite Me Bro! +                      0.259589
- 571740                                       Golf It!                      0.206208
- 475550                                       Beholder                      0.206036
- 334230                                  Town of Salem                      0.186941
-  70600                          Worms Ultimate Mayhem                      0.185938
- 298260                                        Only If                      0.181768
- 257850                            Hyper Light Drifter                      0.181768
- 785740                           This Is the Police 2                      0.179989
-  35140 Batman: Arkham Asylum Game of the Year Edition                      0.179989
+Resumen de centralidades para red_enriquecida.pkl.gz\nGlobal clustering coefficient (transitivity): 0.225873\n\nTop 10 por grado:\n app_id                      name  degree
+    440           Team Fortress 2     700
+ 374320           DARK SOULS™ III     508
+ 945360                  Among Us     482
+    550             Left 4 Dead 2     480
+    220               Half-Life 2     479
+    620                  Portal 2     462
+ 203160               Tomb Raider     448
+  49520             Borderlands 2     436
+ 275850              No Man's Sky     433
+ 292030 The Witcher® 3: Wild Hunt     431\n\nTop 10 por degree centrality:\n app_id                      name  degree_centrality
+    440           Team Fortress 2           0.207162
+ 374320           DARK SOULS™ III           0.150340
+ 945360                  Among Us           0.142646
+    550             Left 4 Dead 2           0.142054
+    220               Half-Life 2           0.141758
+    620                  Portal 2           0.136727
+ 203160               Tomb Raider           0.132584
+  49520             Borderlands 2           0.129032
+ 275850              No Man's Sky           0.128144
+ 292030 The Witcher® 3: Wild Hunt           0.127553\n\nTop 10 por betweenness centrality:\n app_id                      name  betweenness_centrality
+    440           Team Fortress 2                0.504048
+ 945360                  Among Us                0.103916
+ 374320           DARK SOULS™ III                0.089729
+ 203160               Tomb Raider                0.071488
+    620                  Portal 2                0.068772
+    550             Left 4 Dead 2                0.059160
+ 431960          Wallpaper Engine                0.055531
+ 227300    Euro Truck Simulator 2                0.054736
+ 960090               Bloons TD 6                0.048553
+ 292030 The Witcher® 3: Wild Hunt                0.043790\n\nTop 10 por closeness centrality:\n app_id             name  closeness_centrality
+    440  Team Fortress 2              0.989696
+ 945360         Among Us              0.974125
+    220      Half-Life 2              0.972691
+   4000      Garry's Mod              0.967395
+ 960090      Bloons TD 6              0.966787
+    620         Portal 2              0.966728
+    550    Left 4 Dead 2              0.963942
+ 431960 Wallpaper Engine              0.963628
+ 218620         PAYDAY 2              0.961245
+ 304930         Unturned              0.961067\n\nTop 10 por eigenvector centrality:\n app_id             name  eigenvector
+    440  Team Fortress 2     0.338983
+ 945360         Among Us     0.198054
+    220      Half-Life 2     0.179567
+    550    Left 4 Dead 2     0.166362
+ 431960 Wallpaper Engine     0.161207
+    620         Portal 2     0.158471
+ 105600         Terraria     0.155915
+   4000      Garry's Mod     0.152489
+ 960090      Bloons TD 6     0.146335
+ 374320  DARK SOULS™ III     0.141349\n\nTop 10 por local clustering coefficient:\n app_id                                  name  local_clustering_coefficient
+1055430 Swords and Sandals Classic Collection                      0.064734
+ 610360                             Zup! Zero                      0.056550
+ 777050                        TOXIC PLUMBING                      0.046639
+1057180                        Border Officer                      0.046333
+   3540                        Peggle™ Nights                      0.046333
+ 304530                      Agents of Mayhem                      0.045085
+ 665370                     Mutilate-a-Doll 2                      0.044608
+ 568090                            Tattletail                      0.044318
+ 978270           Sam & Dan: Floaty Flatmates                      0.043335
+ 854570    Pamali: Indonesian Folklore Horror                      0.043335

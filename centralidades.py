@@ -27,7 +27,7 @@ def construir_mapa_comunidades(comunidades):
 
 def main():
     print("Cargando grafo enriquecido...")
-    with gzip.open("red_enriquecida.pkl.gz", "rb") as f:
+    with gzip.open("RED-ENRIQUECIDA_100K.pkl.gz", "rb") as f:
         data = pickle.load(f)
 
     G_enriquecido = data["grafo"]
@@ -102,10 +102,10 @@ def main():
 
     df_cent = pd.DataFrame(rows)
     df_cent = df_cent.sort_values(by=["degree"], ascending=False)
-    df_cent.to_csv("centralidades_red_enriquecida.csv", index=False)
+    df_cent.to_csv("centralidades_red_enriquecida_100K.csv", index=False)
 
     resumen = [
-        "Resumen de centralidades para red_enriquecida.pkl.gz",
+        "Resumen de centralidades para RED-ENRIQUECIDA_100K.pkl.gz",
         f"Global clustering coefficient (transitivity): {global_clustering:.6f}",
         "",
         "Top 10 por grado:",
@@ -137,7 +137,7 @@ def main():
         ].head(10).to_string(index=False),
     ]
 
-    with open("resumen_centralidades_red_enriquecida.txt", "w", encoding="utf-8") as f:
+    with open("resumen_centralidades_red_enriquecida_100K.txt", "w", encoding="utf-8") as f:
         f.write("\\n".join(resumen))
 
     print(f"Global clustering coefficient (transitivity): {global_clustering:.6f}")
@@ -189,8 +189,8 @@ def main():
         .to_string(index=False)
     )
 
-    print("\\nCentralidades guardadas en centralidades_red_enriquecida.csv")
-    print("Resumen breve guardado en resumen_centralidades_red_enriquecida.txt")
+    print("\\nCentralidades guardadas en centralidades_red_enriquecida_100K.csv")
+    print("Resumen breve guardado en resumen_centralidades_red_enriquecida_100K.txt")
 
 
 if __name__ == "__main__":

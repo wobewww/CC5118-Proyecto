@@ -39,7 +39,7 @@ for i, comm in enumerate(communities):
 node_colors = [color_map[n] for n in G.nodes()]
 
 # 4. Guardar la red y comunidades comprimidas
-with gzip.open("red_construida100K.pkl.gz", "wb") as f:
+with gzip.open("RED-INICIAL_100K.pkl.gz", "wb") as f:
     pickle.dump({"grafo": G, "comunidades": communities}, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 # 5. Visualización
@@ -56,7 +56,7 @@ nx.draw_networkx_edges(G, pos, alpha=1, edge_color="gray", width=edge_widths)
 
 nodes = nx.draw_networkx_nodes(G, pos, node_size=500, node_color=node_colors, cmap=plt.cm.Set3, edgecolors="white", linewidths=1)
 
-plt.title("Red de Co-recomendaciones (Steam - Muestra 10k)", fontsize=15)
+plt.title("Red de Co-recomendaciones (Steam - Muestra 100k)", fontsize=15)
 plt.axis("off")
 plt.tight_layout()
 plt.show()

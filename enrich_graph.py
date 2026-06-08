@@ -6,7 +6,7 @@ import pickle
 import gzip
 
 # 1. Cargar la red ya construida
-with gzip.open("red_construida100K.pkl.gz", "rb") as f:
+with gzip.open("RED-INICIAL_100K.pkl.gz", "rb") as f:
     data = pickle.load(f)
 
 G = data["grafo"]
@@ -67,7 +67,7 @@ print("\nEjemplo de nodos con géneros:")
 print(df_match[["app_id", "name", "genres"]].head(10).to_string())
 
 # 6. Guardar el grafo enriquecido
-with gzip.open("red_enriquecida.pkl.gz", "wb") as f:
+with gzip.open("RED-ENRIQUECIDA_100K.pkl.gz", "wb") as f:
     pickle.dump({"grafo": G_enriquecido, "comunidades": communities}, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-print("\nGrafo enriquecido guardado en red_enriquecida.pkl.gz")
+print("\nGrafo enriquecido guardado en RED-ENRIQUECIDA_100K.pkl.gz")

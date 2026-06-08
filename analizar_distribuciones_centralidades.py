@@ -225,7 +225,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Analiza distribuciones de centralidades")
     parser.add_argument(
         "--input",
-        default="centralidades_red_enriquecida.csv",
+        default="centralidades_red_enriquecida_100K.csv",
         help="CSV de centralidades a analizar",
     )
     parser.add_argument(

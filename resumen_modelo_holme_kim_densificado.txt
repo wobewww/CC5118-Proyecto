@@ -1,0 +1,11 @@
+Comparacion Red real (CCG) vs Modelo Holme-Kim densificado
+Metrica               Red real     HK densif.
+N                         3272           3272
+E                        55347          61427
+<k>                      33.83          37.55
+C                     0.609810       0.587765
+L                       2.7938         2.5425
+grado max                  700            571
+grado mediana             12.0           13.0
+
+Parametros: m=7, q=0.8, seed=42

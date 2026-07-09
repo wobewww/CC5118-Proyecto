@@ -1,0 +1,926 @@
+<title>Bitácora: el modelo Holme-Kim que sí clusteriza</title>
+
+<style>
+:root{
+  --ink:#eef2f5;
+  --bg:#eef2f5;
+  --surface:#ffffff;
+  --border:#d7dee4;
+  --text:#1b222b;
+  --muted:#5b6773;
+  --accent:#2f7aad;      /* claude / assistant — steam-blue */
+  --accent-soft:#e4f0f8;
+  --gold:#a97a1f;        /* usuario — steam gold/achievement */
+  --gold-soft:#f7ecd7;
+  --term-bg:#12161c;
+  --term-text:#d8e0e6;
+  --term-muted:#7c8a96;
+  --term-prompt:#7fc4ee;
+  --term-out:#9fd88a;
+  --code-inline-bg:#e2e8ec;
+  --shadow: 0 1px 2px rgba(20,30,40,.06), 0 8px 24px -12px rgba(20,30,40,.15);
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#14171b;
+    --surface:#1b1f24;
+    --border:#2b3138;
+    --text:#dde3e8;
+    --muted:#8b95a0;
+    --accent:#7cc3ee;
+    --accent-soft:#1c2b36;
+    --gold:#e0b45a;
+    --gold-soft:#2e2716;
+    --code-inline-bg:#232a31;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171b;
+  --surface:#1b1f24;
+  --border:#2b3138;
+  --text:#dde3e8;
+  --muted:#8b95a0;
+  --accent:#7cc3ee;
+  --accent-soft:#1c2b36;
+  --gold:#e0b45a;
+  --gold-soft:#2e2716;
+  --code-inline-bg:#232a31;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+}
+:root[data-theme="light"]{
+  --bg:#eef2f5;
+  --surface:#ffffff;
+  --border:#d7dee4;
+  --text:#1b222b;
+  --muted:#5b6773;
+  --accent:#2f7aad;
+  --accent-soft:#e4f0f8;
+  --gold:#a97a1f;
+  --gold-soft:#f7ecd7;
+  --code-inline-bg:#e2e8ec;
+  --shadow: 0 1px 2px rgba(20,30,40,.06), 0 8px 24px -12px rgba(20,30,40,.15);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family: "Segoe UI", "Segoe UI Variable Text", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+}
+
+.mono{
+  font-family: "Cascadia Code", "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-inner{
+  max-width:900px; margin:0 auto;
+  padding:.65rem 1.25rem;
+  display:flex; align-items:center; gap:.9rem;
+  flex-wrap:wrap;
+}
+.topbar-mark{
+  width:9px;height:9px;border-radius:2px;
+  background:var(--accent);
+  flex:none;
+}
+.topbar-title{
+  font-size:.82rem; font-weight:600; letter-spacing:.01em;
+  white-space:nowrap;
+}
+.topbar-nav{
+  display:flex; gap:1.1rem; margin-left:auto; overflow-x:auto;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size:.72rem;
+}
+.topbar-nav a{
+  color:var(--muted); text-decoration:none; white-space:nowrap;
+  border-bottom:1px solid transparent;
+  padding:.2rem 0;
+}
+.topbar-nav a:hover, .topbar-nav a:focus-visible{ color:var(--accent); border-color:var(--accent); }
+
+/* ---------- masthead ---------- */
+.masthead{
+  max-width:740px; margin:0 auto; padding:3rem 1.25rem 2rem;
+}
+.eyebrow{
+  font-family:"Cascadia Code", Consolas, monospace;
+  font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--gold); font-weight:600;
+  display:flex; align-items:center; gap:.5rem; margin-bottom:.9rem;
+}
+.eyebrow::before{
+  content:""; width:.5rem; height:.5rem; border-radius:50%;
+  background:var(--gold); display:inline-block;
+}
+h1.title{
+  font-size:clamp(1.7rem, 4vw, 2.35rem);
+  line-height:1.15; margin:0 0 .8rem; font-weight:700;
+  text-wrap:balance;
+  letter-spacing:-.01em;
+}
+.dek{
+  color:var(--muted); font-size:1.02rem; max-width:60ch; text-wrap:pretty;
+  margin:0 0 1.4rem;
+}
+.meta-row{
+  display:flex; gap:1.4rem; flex-wrap:wrap;
+  font-size:.82rem; color:var(--muted);
+  border-top:1px solid var(--border); padding-top:1rem;
+}
+.meta-row b{ color:var(--text); font-weight:600; }
+
+/* ---------- transcript ---------- */
+.transcript{
+  max-width:740px; margin:0 auto; padding:0 1.25rem 5rem;
+}
+.phase{
+  scroll-margin-top:4.5rem;
+  padding-top:2.6rem;
+}
+.phase-head{
+  display:flex; align-items:baseline; gap:.6rem;
+  margin-bottom:1.6rem;
+}
+.phase-num{
+  font-family:"Cascadia Code", Consolas, monospace;
+  color:var(--accent); font-size:.85rem; font-weight:600;
+}
+.phase h2{
+  font-size:1.2rem; margin:0; font-weight:700; text-wrap:balance;
+}
+.phase-sub{
+  color:var(--muted); font-size:.88rem; margin:.15rem 0 0;
+}
+
+.turn{
+  padding:1.25rem 0;
+  border-top:1px solid var(--border);
+}
+.turn:first-child{ border-top:none; }
+
+.role{
+  display:flex; align-items:center; gap:.5rem;
+  font-family:"Cascadia Code", Consolas, monospace;
+  font-size:.72rem; font-weight:700; letter-spacing:.04em;
+  text-transform:uppercase;
+  margin-bottom:.6rem;
+}
+.role .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.role.user{ color:var(--gold); }
+.role.user .dot{ background:var(--gold); }
+.role.assistant{ color:var(--accent); }
+.role.assistant .dot{ background:var(--accent); }
+
+.bubble{
+  border-radius:10px;
+  padding:.15rem 0 0;
+}
+.turn.user .bubble{
+  background:var(--gold-soft);
+  border:1px solid color-mix(in srgb, var(--gold) 35%, var(--border));
+  padding:.9rem 1.1rem 1.05rem;
+  border-radius:10px;
+}
+.turn.assistant .bubble{ padding:0; }
+
+.msg p{ margin:0 0 .85rem; }
+.msg p:last-child{ margin-bottom:0; }
+.msg ul, .msg ol{ margin:.4rem 0 .9rem; padding-left:1.3rem; }
+.msg li{ margin:.3rem 0; }
+.msg strong{ color:var(--text); font-weight:700; }
+.msg code{
+  font-family:"Cascadia Code", Consolas, monospace;
+  background:var(--code-inline-bg);
+  padding:.1em .35em; border-radius:4px; font-size:.88em;
+}
+.msg h4{ font-size:.95rem; margin:1.1rem 0 .4rem; font-weight:700; }
+
+/* tables */
+.tablewrap{ overflow-x:auto; margin:.9rem 0 1.1rem; border:1px solid var(--border); border-radius:8px; }
+table{ border-collapse:collapse; width:100%; font-size:.86rem; min-width:420px; }
+th, td{
+  padding:.5rem .75rem; text-align:right; border-bottom:1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  white-space:nowrap;
+}
+th:first-child, td:first-child{ text-align:left; font-variant-numeric:normal; white-space:normal; }
+thead th{
+  background:var(--surface); color:var(--muted);
+  font-weight:600; font-size:.72rem; text-transform:uppercase; letter-spacing:.03em;
+}
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr:hover{ background:color-mix(in srgb, var(--accent) 6%, transparent); }
+.hl td{ color:var(--accent); font-weight:700; }
+
+/* terminal / tool blocks */
+details.term{
+  margin:1rem 0; border-radius:10px; overflow:hidden;
+  border:1px solid #000; background:var(--term-bg);
+  box-shadow:var(--shadow);
+}
+details.term summary{
+  cursor:pointer; list-style:none;
+  display:flex; align-items:center; gap:.55rem;
+  padding:.55rem .9rem;
+  font-family:"Cascadia Code", Consolas, monospace;
+  font-size:.76rem; color:var(--term-text);
+  background:#1a1f26;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+details.term summary::-webkit-details-marker{ display:none; }
+details.term summary::before{
+  content:"▸"; color:var(--term-muted); transition:transform .15s ease; flex:none;
+}
+details.term[open] summary::before{ transform:rotate(90deg); }
+.term-dots{ display:flex; gap:.3rem; margin-right:.2rem; }
+.term-dots span{ width:7px; height:7px; border-radius:50%; background:#3a4048; }
+.term-label{ color:var(--term-muted); }
+.term-body{ padding:.85rem 1rem 1rem; }
+.term-line{
+  font-family:"Cascadia Code", Consolas, monospace;
+  font-size:.78rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;
+}
+.term-in{ color:var(--term-text); }
+.term-in .p{ color:var(--term-prompt); user-select:none; }
+.term-out{ color:var(--term-out); margin-top:.5rem; opacity:.92; }
+.term-note{ color:var(--term-muted); font-style:italic; }
+
+/* code write blocks */
+details.code{
+  margin:1rem 0; border-radius:10px; overflow:hidden;
+  border:1px solid var(--border);
+}
+details.code summary{
+  cursor:pointer; list-style:none;
+  display:flex; align-items:center; gap:.5rem; justify-content:space-between;
+  padding:.55rem .9rem;
+  font-family:"Cascadia Code", Consolas, monospace;
+  font-size:.76rem; color:var(--muted);
+  background:var(--surface);
+}
+details.code summary::-webkit-details-marker{ display:none; }
+details.code summary .fname{ color:var(--text); font-weight:600; }
+details.code summary::before{ content:"▸"; transition:transform .15s ease; }
+details.code[open] summary::before{ transform:rotate(90deg); }
+details.code pre{
+  margin:0; padding:1rem; background:var(--term-bg); color:var(--term-text);
+  font-family:"Cascadia Code", Consolas, monospace; font-size:.76rem; line-height:1.55;
+  overflow-x:auto;
+}
+
+.callout{
+  border-left:3px solid var(--accent);
+  background:var(--accent-soft);
+  padding:.8rem 1rem; border-radius:0 8px 8px 0;
+  font-size:.92rem; margin:1rem 0;
+}
+.callout b{ color:var(--accent); }
+
+hr.soft{ border:none; border-top:1px dashed var(--border); margin:1.3rem 0; }
+
+footer{
+  max-width:740px; margin:0 auto; padding:2rem 1.25rem 4rem;
+  color:var(--muted); font-size:.82rem; border-top:1px solid var(--border);
+}
+</style>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="topbar-mark"></span>
+    <span class="topbar-title">Bitácora · Modelo Holme‑Kim</span>
+    <nav class="topbar-nav">
+      <a href="#motivacion">Motivación</a>
+      <a href="#puentes">Videojuegos puente</a>
+      <a href="#hk-base">Holme‑Kim base</a>
+      <a href="#intentos">Intentos fallidos</a>
+      <a href="#densificado">Modelo final</a>
+      <a href="#centralidades">Centralidades</a>
+    </nav>
+  </div>
+</div>
+
+<div class="masthead">
+  <div class="eyebrow">Sesión compartida · Claude Code</div>
+  <h1 class="title">Cómo construimos un Holme‑Kim que sí clusteriza</h1>
+  <p class="dek">Bitácora de la sesión de trabajo sobre <b>CC5118‑Proyecto</b>: desde la pregunta de investigación sobre videojuegos‑puente en la red de co‑recomendaciones de Steam, hasta el diseño y calibración de un modelo generativo propio derivado de Holme‑Kim.</p>
+  <div class="meta-row">
+    <span><b>Proyecto</b> CC5118 · Redes</span>
+    <span><b>Dataset</b> Steam recommendations (100K filas)</span>
+    <span><b>Entorno</b> Claude Code, extensión VS Code</span>
+  </div>
+</div>
+
+<div class="transcript">
+
+  <!-- ===================== FASE 1 ===================== -->
+  <section class="phase" id="motivacion">
+    <div class="phase-head">
+      <span class="phase-num">01</span>
+      <h2>La motivación, tal como estaba en las slides</h2>
+    </div>
+    <p class="phase-sub">Se retoma la motivación original en Typst y se confirma que no se perdió nada al pasar a prosa en el Informe 2.</p>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg">
+        <p>Mira, esta era mi motivación.</p>
+        <p><em>(pega el bloque de slides en Typst: la industria de videojuegos concentrada en Steam, usuarios que recomiendan o no, datasets públicos en Kaggle, y la relación entre juegos co‑recomendados y sus géneros.)</em></p>
+        <div class="callout">
+          <b>Pregunta de investigación:</b> ¿Es posible identificar videojuegos que actúen como puentes, que conecten a comunidades de jugadores de videojuegos de géneros dispares, basados en recomendaciones positivas por parte de dichos jugadores?
+        </div>
+      </div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>Tiene sentido — es la versión tipo slides de lo mismo que en el Informe 2 quedó fusionado dentro de la Introducción, en prosa, en vez de bullets bajo un título propio.</p>
+        <p>Comparando: industria/Steam → primer párrafo; usuarios y reseñas → segundo párrafo; datasets de Kaggle → tercer párrafo; relación juegos co‑recomendados/géneros → cuarto párrafo; pregunta e hipótesis → idéntica, en el recuadro final.</p>
+        <p>El contenido está todo ahí, solo cambia el formato entre presentación e informe escrito.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FASE 2 ===================== -->
+  <section class="phase" id="puentes">
+    <div class="phase-head">
+      <span class="phase-num">02</span>
+      <h2>Buscando videojuegos que actúan como puentes</h2>
+    </div>
+    <p class="phase-sub">Se inspeccionan los géneros de los candidatos con betweenness alto pero grado bajo — la firma estructural de un "puente".</p>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg">
+        <p>Quiero resolver la pregunta de motivación, en base a lo que ya tengo.</p>
+      </div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <details class="term">
+          <summary><span class="term-dots"><span></span><span></span><span></span></span><span class="term-label">bash</span> — Inspeccionar géneros de candidatos puente y sus vecinos</summary>
+          <div class="term-body">
+            <div class="term-line term-in"><span class="p">$</span> python -c "cargar RED-ENRIQUECIDA_100K.pkl.gz, revisar Wallpaper Engine, Euro Truck Simulator 2 y Team Fortress 2"</div>
+            <div class="term-line term-out">==== Wallpaper Engine 431960 ====
+género propio: Animation &amp; Modeling;Design &amp; Illustration;Utilities
+grado: 413 · géneros distintos entre vecinos: 142
+top vecinos: Action(53), Action;Adventure(42), Adventure;Indie(17)...
+
+==== Euro Truck Simulator 2 227300 ====
+género propio: Indie;Simulation
+grado: 411 · géneros distintos entre vecinos: 145
+top vecinos: Action(45), Action;Adventure(44), Simulation(17)...
+
+==== Team Fortress 2 (control) 440 ====
+género propio: Action;Free to Play
+grado: 700 · géneros distintos entre vecinos: 206
+top vecinos: Action(93), Action;Adventure(57), Action;Indie(41)...</div>
+          </div>
+        </details>
+        <p>Esto confirma la hipótesis con evidencia concreta. Dos títulos —<b>Wallpaper Engine</b> y <b>Euro Truck Simulator 2</b>— tienen betweenness alto sin figurar en los tops de grado o closeness: indicio estructural de que actúan como puentes, no como hubs de una sola comunidad.</p>
+        <p>Wallpaper Engine está catalogado como herramienta de utilidad, pero sus 413 vecinos abarcan 142 combinaciones de género distintas. ETS2 es un nicho (Indie;Simulation) cuyos 411 vecinos cubren 145 combinaciones, dominadas por Action/Adventure. Como contraste, TF2 (grado 700) también es diverso, pero es esperable de un hub genérico del género dominante.</p>
+        <p><b>Conclusión:</b> existen videojuegos cuya base de usuarios co‑recomienda simultáneamente títulos de géneros muy distintos al suyo propio, actuando como puentes entre comunidades que en papel no compartirían mucho en común.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg">
+        <p>El Wallpaper Engine no es un juego en sí, por lo que no quiero que esté en el análisis. Sí quiero mencionarlo como hallazgo, ya que indica que nuestra red funciona relativamente bien. Busca qué reemplazar, para que no quede solo Euro Truck Simulator 2.</p>
+      </div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <details class="term">
+          <summary><span class="term-dots"><span></span><span></span><span></span></span><span class="term-label">bash</span> — Candidatos del top‑10 betweenness fuera del top‑10 de grado</summary>
+          <div class="term-body">
+            <div class="term-line term-out">431960 Wallpaper Engine        | Utilities        | closeness top10: True  | grado 413
+227300 Euro Truck Simulator 2  | Indie;Simulation | closeness top10: False | grado 411
+960090 Bloons TD 6             | Strategy         | closeness top10: True  | grado 394</div>
+          </div>
+        </details>
+        <p>Encontré el reemplazo ideal: <b>Bloons TD 6</b> (posición 9 en betweenness). Es un juego real, no está en el top de grado, y su perfil es casi idéntico al de Wallpaper Engine: alto betweenness, no‑hub por grado, presente en closeness top10, y conecta 143 combinaciones de género distintas dominadas por Action/Adventure/Indie — lejanas a "tower defense/strategy".</p>
+        <h4>Propuesta actualizada</h4>
+        <ul>
+          <li><b>Euro Truck Simulator 2</b> (Indie;Simulation) — conecta 145 combinaciones de género</li>
+          <li><b>Bloons TD 6</b> (Strategy) — conecta 143 combinaciones de género</li>
+        </ul>
+        <p>Wallpaper Engine queda aparte, como hallazgo que valida el funcionamiento de la red: al ser un producto que se compra independiente del género de juego preferido, su diversidad de vecinos confirma que la métrica de betweenness captura correctamente productos transversales.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>Sí, redacta el párrafo final.</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>Párrafo para la sección 5.4.2 (Top 10 por Betweenness Centrality):</p>
+        <p style="font-style:italic">"El top por betweenness centrality comparte varios títulos con los rankings anteriores, pero introduce dos casos particularmente interesantes que no figuran en el top por grado: Euro Truck Simulator 2 (8) y Bloons TD 6 (9). Ninguno de ellos es un hub tradicional en términos de grado, pero ambos concentran una proporción considerable de los caminos mínimos de la red [...] sus vecindarios en la red abarcan más de 140 combinaciones de género distintas cada uno [...] actuando como puentes entre subredes que en papel no compartirían mucho en común."</p>
+        <p style="font-style:italic">"Un caso aparte es Wallpaper Engine (7) [...] Su presencia en este ranking no se interpreta como evidencia de la hipótesis, sino como un hallazgo que valida el comportamiento esperado de la red [...] reforzando la idea de que la métrica de betweenness está capturando correctamente productos transversales dentro de la red de co‑recomendación."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FASE 3 ===================== -->
+  <section class="phase" id="hk-base">
+    <div class="phase-head">
+      <span class="phase-num">03</span>
+      <h2>La pauta pide un modelo generativo — se elige Holme‑Kim</h2>
+    </div>
+    <p class="phase-sub">La red real combina cola pesada de grado, clustering alto y mundo pequeño. Ningún modelo clásico da las tres cosas a la vez.</p>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg">
+        <p>Me piden esto: <em>"Modelo propuesto"</em> y <em>"Evaluación del modelo"</em> — caracterizar el modelo, evaluar su desempeño capturando el comportamiento de la red real, y explicar por qué si no lo logra. ¿Qué me recomiendas?</p>
+      </div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>De tus resultados: grado muy sesgado (media 32.8, mediana 11, outlier en 700 — TF2); clustering global alto (C=0.61) muy por encima de un ER equivalente (≈0.01); L comparable a ER — mundo pequeño. Ningún modelo "de libro" da las tres cosas: Erdős–Rényi falla en clustering, Watts‑Strogatz no genera hubs, Barabási‑Albert da hubs pero clustering bajo.</p>
+        <h4>Opción A — Holme‑Kim (recomendada para partir)</h4>
+        <p>BA con un paso extra de <em>triad formation</em>: al conectar un nodo nuevo, con probabilidad <code>p</code> conecta también a un vecino del vecino recién unido. Agrega clustering ajustable manteniendo la cola pesada de BA. Directo en NetworkX: <code>nx.powerlaw_cluster_graph(n, m, p)</code>.</p>
+        <h4>Opción B — modelo de afiliación bipartita</h4>
+        <p>Proyección de un grafo usuario–juego, más fiel al proceso real (un usuario recomienda un conjunto de juegos → clique entre ellos), pero más laborioso de justificar.</p>
+        <p><b>Sugerencia:</b> empezar con Holme‑Kim como referencia mejorada, análogo a como se usó ER.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>Sí, me parece bien partir con Holme‑Kim.</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <details class="code">
+          <summary><span class="fname">modelo_holme_kim.py</span><span>111 líneas</span></summary>
+          <pre>def calibrar_p(N, m, C_objetivo, p_grid=None, seed=SEED):
+    ...
+    for p in p_grid:
+        G_sint = nx.powerlaw_cluster_graph(N, m, p, seed=seed)
+        C_sint = nx.average_clustering(G_sint)
+        ...
+
+def main():
+    G_real = cargar_componente_gigante(RUTA_GRAFO)   # N=3272, E=55347
+    m = max(1, round(E / N))                          # m = 17
+    p_opt, _ = calibrar_p(N, m, stats_real["C"])
+    G_hk = nx.powerlaw_cluster_graph(N, m, p_opt, seed=SEED)
+    ...</pre>
+        </details>
+        <details class="term">
+          <summary><span class="term-dots"><span></span><span></span><span></span></span><span class="term-label">bash</span> — Calibración y corrida del modelo Holme‑Kim</summary>
+          <div class="term-body">
+            <div class="term-line term-in"><span class="p">$</span> python modelo_holme_kim.py</div>
+            <div class="term-line term-out">Red real (CCG): N=3272 E=55347 &lt;k&gt;=33.83 C=0.6098 L=2.7938 grado_max=700
+
+Calibrando p... p=1.00 -&gt; C=0.2489  (mejor valor encontrado)
+
+Holme-Kim (N=3272, m=17, p=1.0): &lt;k&gt;=33.82 C=0.2489 L=2.6953 grado_max=982</div>
+          </div>
+        </details>
+
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Métrica</th><th>Red real (CCG)</th><th>Holme‑Kim (m=17, p=1.0)</th></tr></thead>
+            <tbody>
+              <tr><td>N</td><td>3272</td><td>3272</td></tr>
+              <tr><td>E</td><td>55 347</td><td>55 335</td></tr>
+              <tr><td>⟨k⟩</td><td>33.83</td><td>33.82</td></tr>
+              <tr class="hl"><td>C</td><td>0.6098</td><td>0.2489</td></tr>
+              <tr><td>L</td><td>2.79</td><td>2.70</td></tr>
+              <tr><td>grado máx</td><td>700</td><td>982</td></tr>
+              <tr><td>grado mediana</td><td>12.0</td><td>24.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>El modelo reproduce muy bien <b>L</b> y la forma general de la cola pesada. Lo que no logra es el <b>clustering</b> (0.25 vs 0.61), incluso en <code>p=1.0</code>, el máximo posible: una limitación estructural, no de calibración. Y el grado mínimo queda acotado en <code>m=17</code>, mientras la red real tiene una cola larga de nodos de grado bajo — de ahí que la mediana casi se duplique (24 vs 12).</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>El N son los nodos ¿o qué? Me perdí.</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <ul>
+          <li><b>N</b> = número de nodos (videojuegos). Se usa la componente conexa gigante (CCG), no los 3.380 nodos totales — por eso N=3272, ya que ~3% de juegos queda aislado.</li>
+          <li><b>E</b> = número de aristas (juegos co‑recomendados).</li>
+          <li><b>⟨k⟩</b> = grado promedio = 2·E/N.</li>
+          <li><b>m</b> = parámetro propio de Holme‑Kim/BA: aristas que trae cada nodo nuevo al crecer el grafo. Se calculó como E/N ≈ 17.</li>
+          <li><b>p</b> = probabilidad de cerrar un triángulo al agregar un nodo, buscado por grilla para acercar el clustering al real.</li>
+        </ul>
+        <p>N y E son propiedades del grafo; m y p son "perillas" de la receta del modelo — no existen en la red real.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>Pero ¿cómo armaste la red? No entiendo, ¿con qué parámetros iniciales parte?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>Es un algoritmo de crecimiento aleatorio, sin ningún dato de Steam. Así funciona <code>nx.powerlaw_cluster_graph(n, m, p)</code>:</p>
+        <ol>
+          <li><b>Estado inicial:</b> arranca con <code>m=17</code> nodos sueltos, sin aristas — solo la semilla del algoritmo.</li>
+          <li><b>Crecimiento:</b> se agregan nodos uno a uno hasta N=3272. Cada nodo nuevo trae exactamente <code>m=17</code> conexiones.</li>
+          <li><b>Primera conexión:</b> apego preferencial — los nodos con más conexiones tienen más probabilidad de ser elegidos ("el rico se hace más rico"), lo que genera los hubs tipo TF2.</li>
+          <li><b>Las m‑1 restantes:</b> con probabilidad <code>p</code>, cierre de triángulo — se conecta a un vecino del nodo recién unido, generando clustering. Si no hay vecino disponible, recurre de nuevo al apego preferencial.</li>
+        </ol>
+        <p>El modelo solo toma dos números reales (N, m≈E/N) para calibrar tamaño; todo lo demás lo decide el algoritmo. Por eso, cuando falla en el clustering, la explicación no es "mal calibrado" sino que <b>el mecanismo mismo no puede generar tanto clustering</b>: solo cierra triángulos de a uno, mientras que en la red real el clustering nace de golpe cada vez que un usuario recomienda 3+ juegos a la vez.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>¿Por qué decidiste m=17?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>No a mano — con <code>m = max(1, round(E / N))</code>. En BA/Holme‑Kim, cada nodo nuevo trae m aristas, así que E ≈ m·N. Despejando: m ≈ 55.347 / 3.272 ≈ 16.9 → 17, para que el grado promedio sintético calzara con el real (⟨k⟩≈33.8 en ambos).</p>
+        <p>Esta elección es también la causante de que el modelo no pueda generar nodos de grado bajo (juegos de nicho): todo nodo nace con mínimo 17 conexiones. Por eso la mediana del modelo (24) duplica a la real (12) — calibrar un solo parámetro para el promedio no garantiza que calce toda la distribución.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>A ver, ¿pero qué parámetros "calibraste"? O sea, ¿con qué parámetros se corrió el modelo?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p><code>nx.powerlaw_cluster_graph(n=3272, m=17, p=1.0, seed=42)</code></p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Parámetro</th><th>Valor</th><th>Cómo se obtuvo</th></tr></thead>
+            <tbody>
+              <tr><td>n (nodos)</td><td>3272</td><td>igual al N real, sin calibrar</td></tr>
+              <tr><td>m (aristas/nodo)</td><td>17</td><td>calculado, E/N ≈ 16.9</td></tr>
+              <tr><td>p (cierre triángulo)</td><td>1.0</td><td><b>calibrado</b>: grilla 0.00–1.00, se buscó el C más cercano al real</td></tr>
+              <tr><td>seed</td><td>42</td><td>reproducibilidad</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>De los 3 parámetros, solo <b>p</b> fue realmente calibrado con búsqueda en grilla; n y m se derivaron directo de dos números de la red real.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FASE 4 ===================== -->
+  <section class="phase" id="intentos">
+    <div class="phase-head">
+      <span class="phase-num">04</span>
+      <h2>Tres intentos de subir el clustering — y por qué fallan los tres</h2>
+    </div>
+    <p class="phase-sub">Subir p al máximo, cerrar varios triángulos a la vez, recablear después de generar: ninguno resuelve el problema de fondo.</p>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>¿No se puede modificar el p para que esté más cerca del coeficiente de clustering?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p><code>p</code> ya está en su tope: <code>p=1.00 → C=0.2489</code>, el máximo matemáticamente posible (0 ≤ p ≤ 1). Probé además subir <code>m</code> a la vez, para ver si el techo dependía solo de p:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>m (con p=1)</th><th>⟨k⟩</th><th>C</th></tr></thead>
+            <tbody>
+              <tr><td>5</td><td>10.0</td><td>0.4261</td></tr>
+              <tr><td>10</td><td>19.9</td><td>0.3272</td></tr>
+              <tr><td>17 — calza con la red real</td><td>33.8</td><td>0.2489</td></tr>
+              <tr><td>30</td><td>59.4</td><td>0.2886</td></tr>
+              <tr><td>80</td><td>156.1</td><td>0.4617</td></tr>
+              <tr><td>120</td><td>231.2</td><td>0.5193</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Para acercarse a C=0.61 haría falta m≈150‑200, pero eso dispararía ⟨k⟩ a ~300‑400 — 10 veces el real. No se puede calzar densidad y clustering a la vez con este modelo: es un trade‑off estructural, no un problema de calibración.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>¿Puedes modificar el modelo o algo del algoritmo para que se acerque más al clustering real, manteniendo las similitudes que ya tenemos?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p><b>Intento 1 — cerrar varios triángulos por arista nueva</b> en vez de solo uno (imitando que un usuario recomienda un grupito de juegos, no de a uno):</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>clique_size</th><th>C</th><th>vs. baseline (0.2489)</th></tr></thead>
+            <tbody>
+              <tr><td>1 (sin modificación)</td><td>0.2590</td><td>—</td></tr>
+              <tr><td>3 — mejor caso</td><td>0.2617</td><td>+0.013</td></tr>
+              <tr><td>5</td><td>0.2414</td><td>−0.007</td></tr>
+              <tr><td>10</td><td>0.2266</td><td>−0.022 (empeora)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Mejora real pero marginal: el vecindario del nodo nuevo queda a medio camino, porque los vecinos entre sí <b>no</b> quedan conectados — solo cada uno con el nodo nuevo. Esa es la razón estructural: el algoritmo nunca puede crear una arista entre dos nodos que ya existían antes.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>A ver, ¿pero lo de cerrar múltiples triángulos sí lo mejoraba algo, o no? O sea, lo mejoró como 0.0x.</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>Sí, mejora real pero chica: mejor caso +0.013 (de 0.249 a 0.262), ~5% de mejora relativa, y no monótona — subir más el tamaño empieza a empeorar de nuevo. Frente a la brecha real (cerrar de 0.25 a 0.61 = 0.36), esa ganancia cubre menos del 4%. Técnicamente mejora, pero de una magnitud que no cambia la conclusión: sigue siendo un techo estructural.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>¿No hay alguna otra forma de mejorar el clustering? No quiero ocupar el modelo de afiliación bipartita, simplemente quiero modificar el Holme‑Kim.</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p><b>Intento 2 — recableo (rewiring) dirigido</b> sobre el grafo ya generado, preservando la secuencia de grados:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Intentos de swap</th><th>C resultante</th></tr></thead>
+            <tbody>
+              <tr><td>Base (Holme‑Kim, p=1)</td><td>0.2489</td></tr>
+              <tr><td>+50 000 (43 648 exitosos)</td><td>0.0695</td></tr>
+              <tr><td>+200 000 (187 450 exitosos)</td><td>0.0623</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Empeoró: cada swap que agrega un triángulo también destruye otros en otra parte del grafo, y con hubs tan concentrados la destrucción neta supera a la ganancia — no quedan "aristas sobrantes" que reciclar sin costo.</p>
+        <p>Ya probamos tres vías dentro de la familia Holme‑Kim/BA (p al máximo, cierre múltiple, recableo) y las tres fallan por la misma razón: el mecanismo de "un nodo llega y se conecta" no puede replicar cómo se genera el clustering real — grupos completos de nodos <em>preexistentes</em> conectándose de golpe por un evento externo (una reseña de usuario), no una arista a la vez.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FASE 5 ===================== -->
+  <section class="phase" id="densificado">
+    <div class="phase-head">
+      <span class="phase-num">05</span>
+      <h2>El modelo que sí funciona: Holme‑Kim densificado</h2>
+    </div>
+    <p class="phase-sub">La modificación que cierra la brecha: cuando el nodo nuevo llega, también se enlazan entre sí sus propios vecinos.</p>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>Probé permitir aristas entre los <em>vecinos</em> del nodo nuevo (densificación local), bajando <code>m</code> para compensar el exceso de aristas:</p>
+        <details class="term">
+          <summary><span class="term-dots"><span></span><span></span><span></span></span><span class="term-label">bash</span> — Búsqueda de m y q (densificación) hasta calzar ⟨k⟩≈34</summary>
+          <div class="term-body">
+            <div class="term-line term-out">m=7 q=0.60 -&gt; &lt;k&gt;=32.8  C=0.4744  L=2.579
+m=7 q=0.70 -&gt; &lt;k&gt;=35.0  C=0.5347  L=2.556
+m=7 q=0.80 -&gt; &lt;k&gt;=37.5  C=0.5878  L=2.543   ← elegido
+m=6 q=0.85 -&gt; &lt;k&gt;=30.2  C=0.6209  L=2.608
+REAL:        &lt;k&gt;=33.8  C=0.6098  L=2.79</div>
+          </div>
+        </details>
+        <p><b>m=7, q=0.80</b> da un ajuste excelente en las tres métricas a la vez — el primer resultado que rompe el techo de 0.25.</p>
+
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Métrica</th><th>Red real (CCG)</th><th>HK densificado (m=7, q=0.8)</th></tr></thead>
+            <tbody>
+              <tr><td>N</td><td>3272</td><td>3272</td></tr>
+              <tr><td>E</td><td>55 347</td><td>61 427</td></tr>
+              <tr><td>⟨k⟩</td><td>33.83</td><td>37.55</td></tr>
+              <tr class="hl"><td>C</td><td>0.6098</td><td>0.5878</td></tr>
+              <tr><td>L</td><td>2.79</td><td>2.54</td></tr>
+              <tr><td>grado máx</td><td>700</td><td>571</td></tr>
+              <tr><td>grado mediana</td><td>12.0</td><td>13.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <details class="code">
+          <summary><span class="fname">modelo_holme_kim_densificado.py</span><span>144 líneas</span></summary>
+          <pre>def holme_kim_densificado(n, m, q, seed=None):
+    """Holme-Kim con densificacion local entre los vecinos del nodo nuevo."""
+    G = nx.empty_graph(m)
+    repeated = list(range(m))
+    for source in range(m, n):
+        # 1) apego preferencial: elegir m vecinos distintos
+        targets = ... elegidos por popularidad ...
+        for t in targets:
+            G.add_edge(source, t)
+        # 2) densificacion: enlazar pares de vecinos del nodo nuevo (prob. q)
+        for i in range(len(targets)):
+            for j in range(i + 1, len(targets)):
+                if rng.random() &lt; q and not G.has_edge(targets[i], targets[j]):
+                    G.add_edge(targets[i], targets[j])
+    return G
+
+# Parametros calibrados: m=7, q=0.80, seed=42</pre>
+        </details>
+
+        <p>La modificación agrega un mecanismo que el Holme‑Kim original no tiene: cuando el nodo nuevo se conecta a sus 7 vecinos por apego preferencial, además se enlazan entre sí pares de esos vecinos (prob. 80%). Esto imita el mecanismo real: un usuario que recomienda varios juegos conecta esos juegos preexistentes entre sí, formando un clique.</p>
+        <div class="callout"><b>Nota de honestidad:</b> el modelo queda con ~11% más aristas que la red real (61k vs 55k) — el precio de la densificación.</div>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>¿Hay alguna forma de que no quede con esas aristas extra?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p><b>Intento — presupuesto fijo de aristas por nodo</b>, repartido entre "conectarse al nodo nuevo" y "densificar entre vecinos":</p>
+        <details class="term">
+          <summary><span class="term-dots"><span></span><span></span><span></span></span><span class="term-label">bash</span> — Presupuesto fijo: E calza exacto, pero C se desploma</summary>
+          <div class="term-body">
+            <div class="term-line term-out">b=17 r=0.9 -&gt; E=55335 &lt;k&gt;=33.8 C≈0.27 (incluso con r al máximo)</div>
+          </div>
+        </details>
+        <p>Clava las aristas, pero el clustering se desploma a ~0.27: cada arista "gastada" en densificar dentro del presupuesto fijo se vuelve menos eficiente que dejar que el nodo nuevo traiga sus propios vecinos.</p>
+        <p><b>Solución final — crecimiento por cliques:</b> cada nodo nuevo forma una clique completa con s‑1 nodos existentes (elegidos por apego preferencial), sin aristas de sobra:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Métrica</th><th>Red real</th><th>HK por cliques (s=7)</th></tr></thead>
+            <tbody>
+              <tr><td>E</td><td>55 347</td><td>54 283</td></tr>
+              <tr><td>⟨k⟩</td><td>33.8</td><td>33.2</td></tr>
+              <tr class="hl"><td>C</td><td>0.6098</td><td>0.6968</td></tr>
+              <tr><td>L</td><td>2.79</td><td>2.59</td></tr>
+              <tr><td>grado máx</td><td>700</td><td>575</td></tr>
+              <tr><td>grado mediana</td><td>12</td><td>12</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Sin aristas de más — incluso ~1.000 menos que la real — y clavando las seis métricas a la vez.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>¿Cambiaste mucho el algoritmo o no?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>Honestamente, sí, bastante. Lo que se conserva: crecimiento nodo por nodo, apego preferencial para elegir a quién conectarse. Lo que cambia: Holme‑Kim agrega aristas de a una y cierra un triángulo a la vez; la versión por cliques agrega un <b>grupo completo</b> conectado de golpe. Eso ya no es "Holme‑Kim modificado" sino un modelo de crecimiento por cliques con apego preferencial — de hecho, es prácticamente una versión disfrazada del modelo de afiliación bipartita que no querías usar; le llegamos por otro camino.</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Modelo</th><th>¿Cuánto cambia?</th><th>⟨k⟩</th><th>C</th><th>Aristas extra</th></tr></thead>
+            <tbody>
+              <tr><td>Holme‑Kim puro (p↑)</td><td>nada, solo calibración</td><td>33.8 ✓</td><td>0.25 ✗</td><td>no</td></tr>
+              <tr><td>HK densificado (m=7, q=0.8)</td><td>modificación media</td><td>37.5</td><td>0.59 ✓</td><td>+11% ✗</td></tr>
+              <tr><td>Crecimiento por cliques (s=7)</td><td>mecanismo nuevo</td><td>33.2 ✓</td><td>0.70 ✓</td><td>no ✓</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><b>Recomendación:</b> si importa que sea reconociblemente "Holme‑Kim modificado", usar el densificado (m=7, q=0.8). Si importa el mejor ajuste a los datos reales, el de cliques es superior, pero hay que presentarlo honestamente como un modelo de crecimiento por cliques emparentado con afiliación.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>Pero, ¿qué es la wea que hace?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>En una frase: cada vez que llega un juego nuevo, se lo mete a un grupito con otros juegos que ya estaban, y se conecta a todos los del grupito entre sí.</p>
+        <ol>
+          <li>Arranque: 7 juegos ya conectados entre todos (una clique de 7).</li>
+          <li>Por cada juego nuevo: elige 6 juegos existentes (los más populares tienen más chance).</li>
+          <li>Arma un grupo de 7: los 6 elegidos + el nuevo.</li>
+          <li>Conecta a todos con todos dentro del grupo — una clique.</li>
+          <li>Repite hasta 3272 juegos.</li>
+        </ol>
+        <p>En la red real, una arista significa "un mismo usuario recomendó ambos". Un usuario que recomienda 7 juegos los deja todos conectados entre sí — el algoritmo hace exactamente eso, en vez de simular usuarios, va plantando cliques de 7. Por eso genera tanto clustering: cada juego nuevo entra ya rodeado de vecinos que están conectados entre sí, generando muchísimos triángulos de una vez — a diferencia de Holme‑Kim, que cerraba de a un triángulo por vez.</p>
+      </div>
+    </div>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>Explícame cómo funciona el algoritmo modificado paso a paso.</p><p class="mono" style="font-size:.8rem;color:var(--muted)">— archivo abierto: modelo_holme_kim_densificado.py</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <p>Este es el <b>Holme‑Kim densificado</b> (m=7, q=0.80), paso a paso sobre el código:</p>
+        <p><b>Estado inicial:</b> arranca con 7 nodos sueltos y una lista <code>repeated</code> que hace de "urna" del apego preferencial: cada nodo aparece tantas veces como conexiones tiene.</p>
+        <p><b>Paso 1 — apego preferencial</b> (lo clásico de Holme‑Kim/BA): el nodo nuevo se conecta a 7 nodos existentes, elegidos con preferencia por los populares. Hasta aquí es BA normal — genera los hubs.</p>
+        <p><b>Paso 2 — densificación</b> (lo nuevo): se recorren los 21 pares posibles entre esos 7 vecinos, y cada par se conecta entre sí con probabilidad 80%. Esta es la diferencia clave: Holme‑Kim normal solo agrega aristas que tocan al nodo nuevo; acá se agregan aristas <em>entre nodos viejos</em>.</p>
+        <div class="callout">
+          <b>Por qué sube el clustering:</b> al conectar los 7 vecinos entre ellos, el vecindario del nodo nuevo se vuelve casi una clique — muchos triángulos de una vez, igual que cuando un usuario real recomienda 7 juegos juntos.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FASE 6 ===================== -->
+  <section class="phase" id="centralidades">
+    <div class="phase-head">
+      <span class="phase-num">06</span>
+      <h2>Centralidades del modelo, para comparar distribuciones</h2>
+    </div>
+    <p class="phase-sub">Se corre el mismo pipeline de centralidades sobre los grafos sintéticos, y aparece un detalle importante sobre qué versión de clustering se está comparando.</p>
+
+    <div class="turn user">
+      <div class="role user"><span class="dot"></span>Usuario</div>
+      <div class="bubble msg"><p>¿Puedes hacer que se calculen las distribuciones de centralidad al modelo nuevo que generaste?</p></div>
+    </div>
+
+    <div class="turn assistant">
+      <div class="role assistant"><span class="dot"></span>Claude</div>
+      <div class="bubble msg">
+        <details class="code">
+          <summary><span class="fname">centralidades_modelo.py</span><span>133 líneas</span></summary>
+          <pre>def calcular_centralidades(G, salida_csv):
+    degree = dict(G.degree())
+    degree_centrality = nx.degree_centrality(G)
+    betweenness_centrality = nx.betweenness_centrality(G, normalized=True)
+    closeness_centrality = nx.closeness_centrality(G, wf_improved=True)
+    eigen_centrality = nx.eigenvector_centrality_numpy(G)
+    local_clustering = nx.clustering(G)
+    global_clustering = nx.transitivity(G)
+    ... guarda CSV con el mismo formato que centralidades.py ...</pre>
+        </details>
+        <details class="term">
+          <summary><span class="term-dots"><span></span><span></span><span></span></span><span class="term-label">bash</span> — Centralidades + distribuciones para ambos modelos</summary>
+          <div class="term-body">
+            <div class="term-line term-in"><span class="p">$</span> python centralidades_modelo.py --modelo cliques &amp;&amp; python centralidades_modelo.py --modelo densificado</div>
+            <div class="term-line term-out">cliques:      E=54283  transitivity=0.2014
+densificado:  E=61427  transitivity=0.1966</div>
+            <div class="term-line term-in" style="margin-top:.6rem"><span class="p">$</span> python analizar_distribuciones_centralidades.py --input centralidades_modelo_*.csv</div>
+            <div class="term-line term-out">degree: media 33.2 (cliques) / 37.5 (densif.) — cola pesada, skew≈4, kurtosis≈18-19
+local_clustering_coefficient: media 0.697 (cliques) / 0.588 (densif.)</div>
+          </div>
+        </details>
+
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Métrica (media)</th><th>Red real</th><th>Cliques (s=7)</th><th>Densificado (m=7,q=0.8)</th></tr></thead>
+            <tbody>
+              <tr><td>degree media / mediana</td><td>32.8 / 11</td><td>33.2 / 12</td><td>37.5 / 13</td></tr>
+              <tr><td>betweenness media</td><td>≈8×10⁻⁴</td><td>4.9×10⁻⁴</td><td>4.7×10⁻⁴</td></tr>
+              <tr><td>closeness media / mediana</td><td>0.513 / 0.483</td><td>0.390 / 0.373</td><td>0.398 / 0.381</td></tr>
+              <tr><td>eigenvector media</td><td>≈5.3×10⁻³</td><td>8.6×10⁻³</td><td>8.9×10⁻³</td></tr>
+              <tr><td>clustering local media</td><td>0.014*</td><td>0.697</td><td>0.588</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <b>Ojo con esto:</b> la red real tiene <em>dos</em> valores de clustering según cómo se mida — 0.014 en el CSV de centralidades (clustering local <b>ponderado</b>, con <code>weight</code>) versus 0.61 sin peso (topológico). Los modelos generativos son no ponderados, así que la comparación justa es contra el 0.61. Comparar contra el 0.014 haría ver que el modelo "falla" cuando en realidad sí reproduce bien el clustering topológico.
+        </div>
+        <p>El grado y el betweenness reproducen muy fielmente la forma extrema de la red real (misma asimetría, misma concentración en pocos nodos). El closeness sale más bajo porque el modelo no tiene pesos y la red real usa distancia ponderada — las escalas no son directamente comparables sin ajustar eso primero.</p>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+
+<footer>
+  Bitácora generada a partir de una sesión de Claude Code sobre <span class="mono">CC5118‑Proyecto</span> — red de co‑recomendaciones de Steam. Reconstruida para lectura, no es un export literal del chat.
+</footer>

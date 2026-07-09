@@ -1,0 +1,61 @@
+Resumen de distribuciones de centralidad
+
+Métrica: degree
+- count: 3272
+- mean: 37.547066
+- median: 13.000000
+- std: 71.941607
+- min/max: 7.000000 / 571.000000
+- p90/p95/p99: 90.900000 / 164.000000 / 408.000000
+- skew: 3.969897
+- kurtosis: 17.601181
+
+Métrica: degree_centrality
+- count: 3272
+- mean: 0.011479
+- median: 0.003974
+- std: 0.021994
+- min/max: 0.002140 / 0.174564
+- p90/p95/p99: 0.027790 / 0.050138 / 0.124732
+- skew: 3.969897
+- kurtosis: 17.601181
+
+Métrica: betweenness_centrality
+- count: 3272
+- mean: 0.000472
+- median: 0.000006
+- std: 0.001963
+- min/max: 0.000000 / 0.023768
+- p90/p95/p99: 0.000635 / 0.002107 / 0.011260
+- skew: 6.362229
+- kurtosis: 46.953030
+
+Métrica: closeness_centrality
+- count: 3272
+- mean: 0.397583
+- median: 0.380947
+- std: 0.044174
+- min/max: 0.335075 / 0.547631
+- p90/p95/p99: 0.470100 / 0.500681 / 0.532577
+- skew: 1.469717
+- kurtosis: 1.417812
+
+Métrica: eigenvector
+- count: 3272
+- mean: 0.008857
+- median: 0.003274
+- std: 0.015074
+- min/max: 0.000327 / 0.098456
+- p90/p95/p99: 0.022083 / 0.039655 / 0.081840
+- skew: 3.406672
+- kurtosis: 12.359284
+
+Métrica: local_clustering_coefficient
+- count: 3272
+- mean: 0.587765
+- median: 0.549451
+- std: 0.253733
+- min/max: 0.115801 / 1.000000
+- p90/p95/p99: 0.904762 / 0.952381 / 1.000000
+- skew: 0.030825
+- kurtosis: -1.435597

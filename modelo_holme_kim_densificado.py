@@ -1,4 +1,11 @@
-"""Modelo generativo propuesto: Holme-Kim densificado.
+"""[DESCARTADO] Modelo Holme-Kim densificado.
+
+>>> ESTE MODELO FUE DESCARTADO. El modelo oficial es modelo_cliques.py.
+>>> Se descarta porque infla el numero de aristas ~+11% (E=61k vs 55k real,
+>>> <k>=37.5 vs 33.8 real). El de crecimiento por cliques logra el mismo
+>>> clustering sin agregar aristas de mas. Se conserva solo como referencia.
+
+Modelo generativo: Holme-Kim densificado.
 
 El Holme-Kim clasico (nx.powerlaw_cluster_graph) solo agrega aristas
 incidentes al nodo nuevo, por lo que su coeficiente de clustering se satura

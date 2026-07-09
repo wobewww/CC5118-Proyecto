@@ -1,0 +1,11 @@
+Comparacion Red real (CCG) vs Modelo de crecimiento por cliques
+Metrica               Red real        Cliques
+N                         3272           3272
+E                        55347          54283
+<k>                      33.83          33.18
+C                     0.609810       0.696781
+L                       2.7938         2.5931
+grado max                  700            575
+grado mediana             12.0           12.0
+
+Parametro: s=7, seed=42

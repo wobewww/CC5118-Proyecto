@@ -28,7 +28,6 @@ import numpy as np
 RUTA_GRAFO = "RED-ENRIQUECIDA_100K.pkl.gz"
 SALIDA_TXT = "resumen_modelo_cliques.txt"
 SALIDA_PNG = "comparacion_degree_cliques.png"
-S = 7
 SEED = 42
 
 
@@ -95,6 +94,24 @@ def caracterizar(G, nombre):
     print()
     return stats
 
+def calibrar_parametro_s(N_real, E_real):
+    mejor_s = None
+    menor_error = float("inf")
+
+    # se prueba un rango de valores razonables para s
+    for s_test in range(2, 10):
+        # generamos la red
+        G_test = crecimiento_por_cliques(N_real, s_test, seed=SEED)
+        E_test = G_test.number_of_edges()
+
+        # calculamos el error
+        error = abs(E_test - E_real) / E_real
+
+        if error < menor_error:
+            menor_error = error
+            mejor_s = s_test
+
+    return mejor_s, menor_error
 
 def main():
     print("Cargando componente gigante de la red real...")
@@ -102,6 +119,12 @@ def main():
     stats_real = caracterizar(G_real, "Red real (CCG)")
 
     N = stats_real["N"]
+    E = stats_real["E"]
+
+    print("Obteniendo valor óptimo de S")
+    S, error = calibrar_parametro_s(N, E)
+    print(f"El valor óptimo es s={S} (Error en aristas: {error*100:.2f}%)")
+
     print(f"Generando modelo de crecimiento por cliques (N={N}, s={S})...")
     G_mod = crecimiento_por_cliques(N, S, seed=SEED)
     stats_mod = caracterizar(G_mod, f"Crecimiento por cliques (s={S})")
